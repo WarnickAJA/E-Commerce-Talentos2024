@@ -1,47 +1,50 @@
-// controllers/userController.js
+const User = require("../models/User");
+const bcrypt = require("bcryptjs");
 
-const User = require('../models/User');
-
-// Controlador para obtener todos los usuarios
-const getUsers = async (req, res) => {
-  const users = await User.find();
-  res.json(users);
+const getUsers = async () => {
+  return (users = await User.find());
 };
 
-// Controlador para obtener un usuario por ID
-const getUserById = async (req, res) => {
-  const user = await User.findById(req.params.id);
+const getUserById = async (id) => {
+  const user = await User.findById(id);
   if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+    throw new Error("Usuario no encontrando");
   }
-  res.json(user);
+  return user;
 };
 
-// Controlador para actualizar un usuario
-const updateUser = async (req, res) => {
-  const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+const createUser = async (userData) => {
+  const { name, surname, username, email, password, role } = userData;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const newUser = {
+    name,
+    surname,
+    username,
+    email,
+    password: hashedPassword,
+    role,
+  };
+  const user = await User.create(newUser);
+  return user;
+};
+
+const updateUser = async (id, userData) => {
+  const user = await User.findByIdAndUpdate(id, userData, {
     new: true,
     runValidators: true,
   });
-  if (!user) {
-    return res.status(404).json({ message: 'User not found' });
-  }
-  res.json(user);
+  return user;
 };
 
-// Controlador para eliminar un usuario
-const deleteUser = async (req, res) => {
-  const user = await User.findByIdAndDelete(req.params.id);
-  if (!user) {
-    return res.status(404).json({ message: 'User not found' });
-  }
-  res.json({ message: 'User deleted successfully' });
+const deleteUser = async (id) => {
+  const user = await User.findByIdAndDelete(id);
+  return user;
 };
 
-// Exportando los controladores al final
 module.exports = {
   getUsers,
   getUserById,
+  createUser,
   updateUser,
   deleteUser,
 };

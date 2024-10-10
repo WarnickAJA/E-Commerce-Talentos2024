@@ -21,9 +21,9 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json()); // Para el parseo de JSON en las solicitudes
 
 // Rutas
-app.use('/api/products', productRoutes); // Rutas para productos
-app.use('/api/users', userRoutes);       // Rutas para usuarios (CRUD)
-app.use('/api/auth', authRoutes);        // Rutas de autenticación
+app.use('/api/products', productRoutes);
+app.use('/api/users', userRoutes);       
+app.use('/api/auth', authRoutes);        
 
 // Página de inicio por defecto
 app.get('/', (req, res) => {

@@ -16,6 +16,9 @@ const connectDB = async () => {
     process.exit(1); //¿Es necesario o recomendable?
   }
 };
+
+module.exports = connectDB;
+
 // mongoose.connect(process.env.MONGO_URI);
 // const db = mongoose.connection;
 // db.on('error', console.error.bind(console, 'connection error:'));

@@ -1,24 +1,51 @@
-// handlers/authHandler.js
-const authController = require('../controllers/authController');
+const User = require('../models/User');
+const {
+  registerUser,
+  loginUser,
+  getUserProfile,
+} = require('../controllers/authController');
+const { registerUserSchema, loginUserSchema } = require('../validations/userValidation');
 
-// Handler para registrar un nuevo usuario
 const handleRegisterUser = async (req, res, next) => {
   try {
-    // Validación de datos
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email y contraseña son requeridos' });
+    // Validar entrada usando Joi
+    const { error } = registerUserSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
     }
-    await authController.registerUser(req, res);
+    const { name, surname, username, email, password, role } = req.body;
+    // Verificar si el usuario o el email ya existen
+    const userExists = await User.findOne({ $or: [{ username }, { email }] });
+    if (userExists) {
+      return res.status(400).json({ message: 'El usuario o el correo ya existen' });
+    }
+
+    const newUser = await registerUser({ name, surname, username, email, password, role });
+
+    const user = await User.create(newUser);
+    res.status(201).json({ message: 'Usuario registrado exitosamente', user });
   } catch (error) {
     next(error);
   }
 };
 
-// Handler para autenticar un usuario
-const handleAuthUser = async (req, res, next) => {
+// Handler para iniciar sesión
+const handleLoginUser = async (req, res, next) => {
   try {
-    await authController.authUser(req, res);
+    // Validar entrada usando Joi
+    const { error } = loginUserSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Usuario no encontrado' });
+    }
+
+    const loginData = await loginUser(user, password);
+    res.status(200).json(loginData);
   } catch (error) {
     next(error);
   }
@@ -27,7 +54,8 @@ const handleAuthUser = async (req, res, next) => {
 // Handler para obtener el perfil del usuario
 const handleGetUserProfile = async (req, res, next) => {
   try {
-    await authController.getUserProfile(req, res);
+    const userProfile = await getUserProfile(req.params.id);
+    return res.status(200).json(userProfile);
   } catch (error) {
     next(error);
   }
@@ -36,6 +64,6 @@ const handleGetUserProfile = async (req, res, next) => {
 // Exportando los handlers al final
 module.exports = {
   handleRegisterUser,
-  handleAuthUser,
+  handleLoginUser,
   handleGetUserProfile,
 };

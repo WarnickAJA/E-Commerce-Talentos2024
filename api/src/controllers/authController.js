@@ -1,37 +1,68 @@
-// controllers/authController.js
+const User = require("../models/User");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
-const User = require('../models/User');
+// Función para encriptar la contraseña
+// const hashPassword = async (password) => {
+//   const saltRounds = 10;
+//   const hashedPassword = await bcrypt.hash(password, saltRounds);
+//   return hashedPassword;
+// };
 
 // Controlador para registrar un nuevo usuario
-const registerUser = async (req, res) => {
-  const { email, password } = req.body;
+const registerUser = async (userData) => {
+  const { name, surname, username, email, password, role } = userData;
 
-  const userExists = await User.findOne({ email });
-  if (userExists) {
-    return res.status(400).json({ message: 'User already exists' });
-  }
+  // Encriptar contraseña
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = new User({ email, password });
-  await user.save();
-  res.status(201).json({ message: 'User registered successfully' });
+  // Crear objeto del nuevo usuario con la contraseña encriptada
+  const newUser = {
+    name,
+    surname,
+    username,
+    email,
+    password: hashedPassword,
+    role,
+  };
+
+  return newUser;
 };
 
-// Controlador para autenticar un usuario
-const authUser = async (req, res) => {
-  const { email, password } = req.body;
-  // Aquí iría la lógica de autenticación
-  res.json({ message: 'User authenticated successfully' });
+const loginUser = async (user, passwordInput) => {
+  // Verificar contraseña
+  const isPasswordValid = await bcrypt.compare(passwordInput, user.password);
+  if (!isPasswordValid) {
+    throw new Error("Contraseña incorrecta");
+  }
+
+  // Crear token JWT
+  const token = jwt.sign(
+    { userId: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1h",
+    }
+  );
+
+  return { token, userId: user._id, username: user.username, role: user.role };
 };
 
 // Controlador para obtener el perfil del usuario
-const getUserProfile = async (req, res) => {
-  // Aquí iría la lógica para obtener el perfil
-  res.json({ message: 'User profile fetched successfully' });
+const getUserProfile = async (id) => {
+  const user = await User.findById(id);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+ const { name, role } = user;
+
+  return { name, role };
+
 };
 
 // Exportando los controladores al final
 module.exports = {
   registerUser,
-  authUser,
+  loginUser,
   getUserProfile,
 };

@@ -1,59 +1,102 @@
-// handlers/productHandler.js
-const productController = require('../controllers/productController');
+const {
+  getProducts,
+  getProductById,
+  getProductByName,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} = require('../controllers/productController');
 
-// Handler para obtener todos los productos
+
 const handleGetProducts = async (req, res, next) => {
   try {
-    await productController.getProducts(req, res);
+    const products = await getProducts();
+    if (!products) {
+      return res.status(404).json({ message: 'Products not found' });
+    }
+    res.status(200).json(products);
   } catch (error) {
+    if (error.name === 'CastError' || error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
     next(error);
   }
 };
 
-// Handler para obtener un producto por ID
+
 const handleGetProductById = async (req, res, next) => {
   try {
-    await productController.getProductById(req, res);
+    const product = await getProductById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.status(200).json(product);
   } catch (error) {
     next(error);
   }
 };
 
-// Handler para crear un nuevo producto
+const handleGetProductByName = async (req, res, next) => {
+  try {
+    const { name } = req.query;
+    if (!name) {
+      return res.status(400).json({ message: 'El nombre es requerido' });
+    }
+    const product = await getProductByName(name);
+    if (!product) {
+      return res.status(404).json({ message: 'Producto no encontrado' });
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    next(error); 
+  }
+};
 const handleCreateProduct = async (req, res, next) => {
   try {
     const { name, price, stock } = req.body;
-    if (!name || !price || typeof stock !== 'number') {
-      return res.status(400).json({ message: 'Nombre, precio y stock son requeridos' });
+
+    if (!name) {
+      return res.status(400).json({ message: 'El nombre es requerido' });
     }
-    await productController.createProduct(req, res);
+    if (!price) {
+      return res.status(400).json({ message: 'El precio es requerido' });
+    }
+    if (typeof stock !== 'number') {
+      return res.status(400).json({ message: 'El stock debe ser un n mero' });
+    }
+
+    const product = await createProduct(name, price, stock);
+    res.status(201).json(product);
   } catch (error) {
     next(error);
   }
 };
 
-// Handler para actualizar un producto
 const handleUpdateProduct = async (req, res, next) => {
   try {
-    await productController.updateProduct(req, res);
+    const updatedProduct = await updateProduct(req.params.id, req.body);
+    res.status(200).json({ message: 'Producto modificado exitosamente: ', updatedProduct });
   } catch (error) {
     next(error);
   }
 };
 
-// Handler para eliminar un producto
+
 const handleDeleteProduct = async (req, res, next) => {
   try {
-    await productController.deleteProduct(req, res);
+    const deletedProduct = await deleteProduct(req.params.id);
+    res.status(200).json({ message: 'Product deleted successfully', deletedProduct });
   } catch (error) {
     next(error);
   }
 };
 
-// Exportando los handlers al final
+
 module.exports = {
   handleGetProducts,
   handleGetProductById,
+  handleGetProductByName,
   handleCreateProduct,
   handleUpdateProduct,
   handleDeleteProduct,
